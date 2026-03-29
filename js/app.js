@@ -16,6 +16,16 @@
 'use strict';
 
 /* ─────────────────────────────────────────────
+   0. CONSTANTS
+───────────────────────────────────────────── */
+
+const STORAGE_KEYS = {
+    DARK_MODE:    'pg_dark_mode',
+    USER_INFO:    'pg_user_info',
+    SCAN_RESULTS: 'pg_scan_results'
+};
+
+/* ─────────────────────────────────────────────
    1. SANITIZATION HELPERS
 ───────────────────────────────────────────── */
 
