@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Guardian — Data Broker Removal Tool</title>
+
+    <!--
+    ╔══════════════════════════════════════════════════════════╗
+    ║  SECURITY HEADERS (supplement server-side headers)       ║
+    ╚══════════════════════════════════════════════════════════╝
+    Content-Security-Policy:
+      • default-src 'self'
+      • style-src: self + Google Fonts CDN + Font Awesome CDN
+      • font-src: self + Google Fonts + Font Awesome CDN
+      • script-src: 'self' ONLY — no inline scripts, no eval
+      • object-src 'none' — blocks Flash/PDF/plugin injection
+      • base-uri 'self'   — prevents base tag hijacking
+      • form-action 'self'— prevents form exfiltration
+    -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        style-src 'self'
+            https://fonts.googleapis.com
+            https://cdn.jsdelivr.net;
+        font-src 'self'
+            https://fonts.gstatic.com
+            https://cdn.jsdelivr.net;
+        script-src 'self'
+            https://www.paypal.com
+            https://www.paypalobjects.com;
+        img-src 'self' data:
+            https://www.paypalobjects.com
+            https://*.paypal.com;
+        frame-src https://www.paypal.com
+                  https://www.sandbox.paypal.com;
+        connect-src 'self'
+            https://www.paypal.com
+            https://www.sandbox.paypal.com
+            https://api-m.paypal.com
+            https://api-m.sandbox.paypal.com;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+        frame-ancestors 'none';
+    ">
+
+    <!-- Clickjacking protection -->
+    <meta http-equiv="X-Frame-Options" content="DENY">
+
+    <!-- Stop browser MIME sniffing -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+    <!-- No referrer leaked to third-party opt-out pages -->
+    <meta name="referrer" content="no-referrer">
+
+    <!-- Disable browser caching of personal data -->
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+
+    <!--
+    External CDN stylesheets — loaded after CSP meta so browser applies policy.
+    SRI (Subresource Integrity) hashes lock the exact file versions.
+    If CDN serves a tampered file the browser refuses to load it.
+    -->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"
+        integrity="sha256-HtsdjLOiKB9dS4unlFchB0fXhpHNqwjFdQLiTi7gCKs="
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer">
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com">
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet"
+        referrerpolicy="no-referrer">
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Security status banner -->
+    <div class="security-banner" role="banner" aria-label="Security status">
+        <i class="fas fa-lock" aria-hidden="true"></i>
+        All data stored locally &mdash; nothing leaves your device &mdash; no server, no tracking
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                    <span>Privacy Guardian</span>
+                </div>
+                <div class="header-actions">
+                    <button id="darkModeToggle" class="icon-btn" title="Toggle Dark Mode" aria-label="Toggle dark mode">
+                        <i class="fas fa-moon" aria-hidden="true"></i>
+                    </button>
+                    <button id="helpBtn" class="icon-btn" title="Help &amp; Tips" aria-label="Open help">
+                        <i class="fas fa-question-circle" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+
+            <!-- Hero -->
+            <section class="hero">
+                <h1>Take Control of Your Personal Data</h1>
+                <p class="subtitle">Search across 26+ major data brokers and request removal from every site that exposes your privacy.</p>
+                <div class="privacy-badge">
+                    <i class="fas fa-lock" aria-hidden="true"></i>
+                    <span>All searches run locally. Your data never leaves your device.</span>
+                </div>
+            </section>
+
+            <!-- Search Form -->
+            <section class="search-section" id="searchSection" aria-labelledby="searchHeading">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 id="searchHeading"><i class="fas fa-search" aria-hidden="true"></i> Search for Your Information</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="searchForm" novalidate autocomplete="off">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="firstName">First Name <abbr title="required">*</abbr></label>
+                                    <input type="text" id="firstName" name="firstName" required
+                                        placeholder="John" maxlength="64"
+                                        autocomplete="off" spellcheck="false">
+                                </div>
+                                <div class="form-group">
+                                    <label for="lastName">Last Name <abbr title="required">*</abbr></label>
+                                    <input type="text" id="lastName" name="lastName" required
+                                        placeholder="Doe" maxlength="64"
+                                        autocomplete="off" spellcheck="false">
+                                </div>
+                                <div class="form-group">
+                                    <label for="city">City</label>
+                                    <input type="text" id="city" name="city"
+                                        placeholder="Phoenix" maxlength="64"
+                                        autocomplete="off">
+                                </div>
+                                <div class="form-group">
+                                    <label for="state">State</label>
+                                    <input type="text" id="state" name="state"
+                                        placeholder="AZ" maxlength="2"
+                                        autocomplete="off">
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Email Address</label>
+                                    <input type="email" id="email" name="email"
+                                        placeholder="you@example.com" maxlength="128"
+                                        autocomplete="off">
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Phone <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+                                    <input type="tel" id="phone" name="phone"
+                                        placeholder="(555) 123-4567" maxlength="20"
+                                        autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search" aria-hidden="true"></i> Start Scanning
+                                </button>
+                                <button type="button" id="clearBtn" class="btn btn-secondary">
+                                    <i class="fas fa-eraser" aria-hidden="true"></i> Clear All
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Progress -->
+            <section class="progress-section" id="progressSection" style="display:none;" aria-live="polite" aria-label="Scan progress">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="progress-header">
+                            <h3>Scanning Data Brokers&hellip;</h3>
+                            <span id="progressText">0 of 26 sites checked</span>
+                        </div>
+                        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Dashboard -->
+            <section class="results-section" id="resultsSection" style="display:none;" aria-labelledby="resultsHeading">
+                <div class="section-header">
+                    <h2 id="resultsHeading"><i class="fas fa-database" aria-hidden="true"></i> Scan Results</h2>
+                    <div class="action-buttons">
+                        <button id="exportCSVBtn" class="btn btn-secondary">
+                            <i class="fas fa-file-csv" aria-hidden="true"></i> Export CSV
+                        </button>
+                        <button id="exportReportBtn" class="btn btn-secondary">
+                            <i class="fas fa-print" aria-hidden="true"></i> Print Report
+                        </button>
+                        <button id="clearResultsBtn" class="btn btn-outline">
+                            <i class="fas fa-trash" aria-hidden="true"></i> Clear Results
+                        </button>
+                        <button id="autoOptOutBtn" class="btn btn-primary" style="background:linear-gradient(135deg,#10b981,#059669);border:none">
+                            <i class="fas fa-robot" aria-hidden="true"></i> Auto Opt-Out All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-grid" role="list" aria-label="Summary statistics">
+                    <div class="stat-card" role="listitem">
+                        <div class="stat-icon found"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="foundCount">0</div>
+                            <div class="stat-label">Sites with Your Data</div>
+                        </div>
+                    </div>
+                    <div class="stat-card" role="listitem">
+                        <div class="stat-icon pending"><i class="fas fa-clock" aria-hidden="true"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="pendingCount">0</div>
+                            <div class="stat-label">Removal Pending</div>
+                        </div>
+                    </div>
+                    <div class="stat-card" role="listitem">
+                        <div class="stat-icon removed"><i class="fas fa-check-circle" aria-hidden="true"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="removedCount">0</div>
+                            <div class="stat-label">Successfully Removed</div>
+                        </div>
+                    </div>
+                    <div class="stat-card" role="listitem">
+                        <div class="stat-icon clean"><i class="fas fa-shield-alt" aria-hidden="true"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="cleanCount">0</div>
+                            <div class="stat-label">No Data Found</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Tabs -->
+                <div class="filter-tabs" role="tablist" aria-label="Filter results">
+                    <button class="tab-btn active" data-filter="all"     role="tab" aria-selected="true">All Sites</button>
+                    <button class="tab-btn"         data-filter="found"   role="tab" aria-selected="false">Found</button>
+                    <button class="tab-btn"         data-filter="pending" role="tab" aria-selected="false">Pending Removal</button>
+                    <button class="tab-btn"         data-filter="removed" role="tab" aria-selected="false">Removed</button>
+                    <button class="tab-btn"         data-filter="clean"   role="tab" aria-selected="false">Clean</button>
+                </div>
+
+                <div class="brokers-grid" id="brokersGrid" aria-live="polite"></div>
+            </section>
+
+            <!-- Tracking Log -->
+            <section class="tracking-section" id="trackingSection" style="display:none;" aria-labelledby="trackingHeading">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 id="trackingHeading"><i class="fas fa-list-check" aria-hidden="true"></i> Removal Tracking Log</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="tracking-table" aria-label="Removal tracking log">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Data Broker</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Date Found</th>
+                                        <th scope="col">Removal Requested</th>
+                                        <th scope="col">Follow-up Date</th>
+                                        <th scope="col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="trackingTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Privacy Tips -->
+            <section class="tips-section" aria-labelledby="tipsHeading">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 id="tipsHeading"><i class="fas fa-lightbulb" aria-hidden="true"></i> Privacy Protection Tips</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="tips-grid">
+                            <div class="tip-item">
+                                <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                                <h3>Check Regularly</h3>
+                                <p>Data brokers often re-add your info. Scan every 3–6 months.</p>
+                            </div>
+                            <div class="tip-item">
+                                <i class="fas fa-envelope" aria-hidden="true"></i>
+                                <h3>Use a Separate Email</h3>
+                                <p>Create a dedicated address for opt-out requests to track confirmations.</p>
+                            </div>
+                            <div class="tip-item">
+                                <i class="fas fa-file-alt" aria-hidden="true"></i>
+                                <h3>Document Everything</h3>
+                                <p>Save confirmation emails and screenshots of every removal request.</p>
+                            </div>
+                            <div class="tip-item">
+                                <i class="fas fa-user-shield" aria-hidden="true"></i>
+                                <h3>Be Persistent</h3>
+                                <p>Some sites take 30–90 days. Follow up if you don't get confirmation.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div><!-- /.container -->
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Privacy Guardian &mdash; Milewski.inc. Protecting your digital privacy, one removal at a time.</p>
+            <p class="disclaimer">This tool helps you locate and request removal from data brokers. Always verify opt-out success directly with each site.</p>
+        </div>
+    </footer>
+
+    <!-- ── MODALS ── -->
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="helpModalTitle"><i class="fas fa-question-circle" aria-hidden="true"></i> How to Use Privacy Guardian</h2>
+                <button class="modal-close" aria-label="Close help">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>Step 1 &mdash; Enter Your Information</h3>
+                <p>Fill in your name and optionally your city, state, email, and phone. More fields = more accurate matching.</p>
+                <h3>Step 2 &mdash; Scan Data Brokers</h3>
+                <p>Click <strong>Start Scanning</strong>. The tool generates direct links to check each of the 26+ brokers.</p>
+                <h3>Step 3 &mdash; Request Removal</h3>
+                <p>For sites marked <em>Data Found</em>, click <strong>Opt-Out Page</strong> to open the broker's removal form, or use <strong>Email Template</strong> to send a formal written request.</p>
+                <h3>Step 4 &mdash; Track Progress</h3>
+                <p>Use the Removal Tracking Log. Mark sites as removed once confirmed. Follow-up reminders are set automatically at 30 days.</p>
+                <h3>Privacy Guarantee</h3>
+                <p><strong>Your data never leaves your device.</strong> Everything is stored in your browser's localStorage only. No server, no analytics, no cookies.</p>
+                <h3>Tips for Success</h3>
+                <ul>
+                    <li>Removals can take 30–90 days &mdash; be patient.</li>
+                    <li>Re-scan every 3–6 months (brokers often re-list you).</li>
+                    <li>Save every confirmation email as legal proof.</li>
+                    <li>For ZabaSearch and similar, send via certified mail.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Template Modal -->
+    <div id="emailModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="emailModalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="emailModalTitle"><i class="fas fa-envelope" aria-hidden="true"></i> Removal Request Email Template</h2>
+                <button class="modal-close" aria-label="Close email template">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Copy and send this to the data broker's privacy/legal team:</p>
+                <div class="email-template">
+                    <textarea id="emailTemplate" readonly rows="18" aria-label="Email template text"></textarea>
+                </div>
+                <button id="copyEmailBtn" class="btn btn-primary">
+                    <i class="fas fa-copy" aria-hidden="true"></i> Copy to Clipboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes Modal -->
+    <div id="notesModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="notesModalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="notesModalTitle"><i class="fas fa-sticky-note" aria-hidden="true"></i> Notes</h2>
+                <button class="modal-close" aria-label="Close notes">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="notesModalBrokerName" style="font-weight:600;margin-bottom:.75rem;"></p>
+                <textarea id="notesTextarea" rows="6" maxlength="1000"
+                    placeholder="Record confirmation codes, dates, contact names…"
+                    style="width:100%;padding:.75rem;border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);font-size:.95rem;resize:vertical;"
+                    aria-label="Notes for this broker"></textarea>
+                <div style="margin-top:1rem;display:flex;gap:.5rem;">
+                    <button id="saveNotesBtn" class="btn btn-primary">
+                        <i class="fas fa-save" aria-hidden="true"></i> Save Notes
+                    </button>
+                    <button class="btn btn-outline modal-close">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── AUTO OPT-OUT RESULTS MODAL ── -->
+    <div id="optoutModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="optoutModalTitle">
+        <div class="modal-content" style="max-width:680px">
+            <div class="modal-header">
+                <h2 id="optoutModalTitle"><i class="fas fa-robot" aria-hidden="true"></i> Auto Opt-Out Running</h2>
+                <button class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="optoutModalSubtitle" style="margin-bottom:1rem;color:var(--text-secondary)"></p>
+                <div id="optoutProgressBar" class="progress-bar" style="margin-bottom:1.25rem">
+                    <div id="optoutProgressFill" class="progress-fill" style="width:0%"></div>
+                </div>
+                <div id="optoutResultsList" style="display:flex;flex-direction:column;gap:.6rem"></div>
+                <div id="optoutDoneMsg" style="display:none;margin-top:1.25rem;padding:1rem;background:var(--bg-tertiary);border-radius:var(--radius-md)">
+                    <strong>All done.</strong> Check the tracking log and your inbox for any verification emails from the brokers.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── PAYWALL MODAL ── -->
+    <div id="paywallModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="paywallTitle">
+        <div class="modal-content" style="max-width:500px">
+            <div class="modal-header" style="background:linear-gradient(135deg,#1e3a5f,#0f172a);color:#f1f5f9">
+                <h2 id="paywallTitle" style="color:#f1f5f9">
+                    <i class="fas fa-lock" aria-hidden="true"></i>&nbsp;Unlock Full Auto Opt-Out
+                </h2>
+                <button class="modal-close" aria-label="Close" style="color:#f1f5f9">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align:center;margin-bottom:1.5rem">
+                    <div style="font-size:3rem;margin-bottom:.5rem">&#128274;</div>
+                    <h3 style="font-size:1.4rem;margin-bottom:.5rem">21 More Brokers, Handled For You</h3>
+                    <p style="color:var(--text-secondary)">You&rsquo;ve already auto-opted out of the first 5 brokers for free.<br>Unlock all 26 with one payment.</p>
+                </div>
+
+                <div style="background:var(--bg-secondary);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.5rem">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+                        <span style="font-weight:600">Free tier</span>
+                        <span style="color:var(--success-color);font-weight:600">5 brokers &mdash; included</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:600">Full unlock</span>
+                        <span style="color:var(--primary-color);font-size:1.4rem;font-weight:700">$5 one-time</span>
+                    </div>
+                </div>
+
+                <ul style="margin:0 0 1.5rem 1.25rem;color:var(--text-secondary);line-height:1.9">
+                    <li>Auto-fills opt-out forms on all 26 data broker sites</li>
+                    <li>Opens &amp; pre-fills pages you must verify yourself (ID/phone)</li>
+                    <li>Generates certified-mail letter for ZabaSearch</li>
+                    <li>No subscription &mdash; one payment, unlocked for your session</li>
+                    <li>Saves hours of copy-paste and form hunting</li>
+                </ul>
+
+                <div id="paypal-button-container" style="min-height:48px"></div>
+                <p id="paywallStatus" style="text-align:center;margin-top:.75rem;font-size:.875rem;color:var(--text-secondary)"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PayPal JS SDK — loads PayPal smart buttons (client-side only, no server key needed here) -->
+    <script
+        src="https://www.paypal.com/sdk/js?client-id=AWmNI692YYq6KD1G4-JZfxveWflEOyRi2WQAPFW5HC_YI1aH2DPf5WeAMs2EpQ0a6Ur2Dy3raEm1p_vS&currency=USD&intent=capture"
+        data-sdk-integration-source="button-factory"
+        crossorigin="anonymous">
+    </script>
+
+    <script src="js/data-brokers.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/payment.js"></script>
+</body>
+</html>

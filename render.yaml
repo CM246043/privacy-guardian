@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: privacy-guardian
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: PAYPAL_ENV
+        value: live
+      - key: PAYPAL_CLIENT_ID
+        value: AWmNI692YYq6KD1G4-JZfxveWflEOyRi2WQAPFW5HC_YI1aH2DPf5WeAMs2EpQ0a6Ur2Dy3raEm1p_vS
+      - key: PAYPAL_CLIENT_SECRET
+        value: EB_JtKaVJmiIzhnn5h9h5LdU-WnYI4ak2Ra9H3qGTdp4Wjg5ljHjwecoRJsWbI79nI2-fDPs4dKx1oWN
+      - key: PAYPAL_RECEIVER_EMAIL
+        value: cm246043@gmail.com
+    healthCheckPath: /api/state
+    autoDeploy: true

@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+pg_state.json
+*.log
+.DS_Store
+.playwright/
