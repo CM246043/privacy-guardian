@@ -277,8 +277,17 @@ function icon(faClass) {
 ───────────────────────────────────────────── */
 
 document.addEventListener('DOMContentLoaded', () => {
-    setupEventListeners();
-    initializeApp(); // async — loads saved state then boots UI
+    try {
+        setupEventListeners();
+        initializeApp(); // async — loads saved state then boots UI
+    } catch (err) {
+        // Surface any startup crash visibly instead of silent freeze
+        console.error('Privacy Guardian init error:', err);
+        const banner = document.createElement('div');
+        banner.style.cssText = 'background:#dc2626;color:#fff;padding:12px 16px;text-align:center;font-size:14px;';
+        banner.textContent = 'App failed to start — please refresh the page. (' + err.message + ')';
+        document.body.prepend(banner);
+    }
 });
 
 async function initializeApp() {
@@ -322,6 +331,9 @@ function populateForm(data) {
 ───────────────────────────────────────────── */
 
 function setupEventListeners() {
+    // Scan button — direct click handler (not form submit) so page never reloads
+    document.getElementById('scanBtn').addEventListener('click', handleSearch);
+    // Also keep form submit as fallback (e.g. Enter key in a field)
     document.getElementById('searchForm').addEventListener('submit', handleSearch);
     document.getElementById('clearBtn').addEventListener('click', clearForm);
     document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
@@ -356,7 +368,7 @@ function setupEventListeners() {
 ───────────────────────────────────────────── */
 
 function handleSearch(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
 
     const formData = {
         firstName: document.getElementById('firstName').value,
