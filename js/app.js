@@ -486,7 +486,9 @@ function displayBrokerCards() {
         return;
     }
 
-    list.forEach(broker => grid.appendChild(createBrokerCard(broker)));
+    // Use patched card builder from payment.js (adds FREE/PRO badges) if available
+    const cardBuilder = window._patchedCreateBrokerCard || createBrokerCard;
+    list.forEach(broker => grid.appendChild(cardBuilder(broker)));
 }
 
 /* Build a broker card entirely via DOM APIs — zero innerHTML */

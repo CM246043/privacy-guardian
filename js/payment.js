@@ -323,28 +323,32 @@ function renderPayPalButton() {
     }).render('#paypal-button-container');
 }
 
-/* ── Update broker cards to show free/premium badges ── */
-// Patch into displayBrokerCards by extending createBrokerCard
-const _origCreateCard = window.createBrokerCard;
+/* ── Patch createBrokerCard to add FREE/PRO tier badges ── */
 if (typeof createBrokerCard === 'function') {
-    // Re-export patched version — add a FREE/PREMIUM badge to each card
     const _original = createBrokerCard;
-    window._patchedCreateBrokerCard = function(broker) {
+    const _patched = function(broker) {
         const card = _original(broker);
-        // Add tier badge to broker name area
         const nameEl = card.querySelector('.broker-name');
         if (nameEl) {
-            const tierBadge = document.createElement('span');
             const isFree = FREE_BROKER_IDS.includes(broker.id);
-            tierBadge.textContent = isFree ? ' FREE' : ' PRO';
-            tierBadge.style.cssText = `
-                margin-left:.5rem;font-size:.6rem;padding:.15rem .4rem;
-                border-radius:.25rem;font-weight:700;vertical-align:middle;
-                background:${isFree ? 'rgba(16,185,129,.15)' : 'rgba(37,99,235,.15)'};
-                color:${isFree ? '#059669' : '#2563eb'};
-            `;
+            const tierBadge = document.createElement('span');
+            tierBadge.className = 'tier-badge';
+            tierBadge.textContent = isFree ? 'FREE' : 'PRO';
+            tierBadge.style.cssText = [
+                'margin-left:.5rem',
+                'font-size:.6rem',
+                'padding:.15rem .4rem',
+                'border-radius:.25rem',
+                'font-weight:700',
+                'vertical-align:middle',
+                'background:' + (isFree ? 'rgba(16,185,129,.15)' : 'rgba(37,99,235,.15)'),
+                'color:' + (isFree ? '#059669' : '#2563eb')
+            ].join(';');
             nameEl.appendChild(tierBadge);
         }
         return card;
     };
+    // Make available both ways
+    window.createBrokerCard = _patched;
+    window._patchedCreateBrokerCard = _patched;
 }
